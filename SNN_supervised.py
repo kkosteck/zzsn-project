@@ -93,14 +93,14 @@ def train_network(network, dataset, spikes, n_train, update_interval, n_classes,
         spike_record[i % update_interval] = spikes["Ae"].get("s").view(time, n_neurons)
 
         network.reset_state_variables()  # Reset state variables.
-        pbar.set_description_str("Train progress: ")
+        pbar.set_description_str(f"Accuracy: {np.mean(accuracy['all']):.2f}. Train progress: ")
         pbar.update()
 
     print(f"Progress: {n_train} / {n_train} \n")
     print("Training complete.\n")
 
 # do przerobienia
-def test_network(network, config):
+def test_network(network, config, spikes):
     print("Testing....\n")
     # Load MNIST data.
     test_dataset = MNIST(
@@ -124,6 +124,10 @@ def test_network(network, config):
     print("\nBegin testing\n")
     network.train(mode=False)
 
+    assignments = -torch.ones_like(torch.Tensor(config["n_neurons"]), device=device)
+    proportions = torch.zeros_like(torch.Tensor(config["n_neurons"], config["n_classes"]), device=device)
+    rates = torch.zeros_like(torch.Tensor(config["n_neurons"], config["n_classes"]), device=device)
+
     pbar = tqdm(total=config["n_test"])
     for step, batch in enumerate(test_dataset):
         if step > config["n_test"]:
@@ -142,12 +146,12 @@ def test_network(network, config):
         label_tensor = torch.tensor(batch["label"], device=device)
 
         # Get network predictions.
-        all_activity_pred = all_activity(spikes=spike_record, assignments=assignments, n_labels=n_classes)
+        all_activity_pred = all_activity(spikes=spike_record, assignments=assignments, n_labels=config["n_classes"])
         proportion_pred = proportion_weighting(
             spikes=spike_record,
             assignments=assignments,
             proportions=proportions,
-            n_labels=n_classes,
+            n_labels=config["n_classes"],
         )
 
         # Compute network accuracy according to available classification strategies.

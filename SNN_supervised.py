@@ -111,7 +111,9 @@ def train_network(network, dataset, spikes, n_train, update_interval, n_classes,
     # Train the network.
     print("Begin training.\n")
 
-    pbar = tqdm(total=n_train)
+    pbar = None
+    if not plot:
+        pbar = tqdm(total=n_train)
     for (i, datum) in enumerate(dataloader):
         if i > n_train:
             break
@@ -133,6 +135,8 @@ def train_network(network, dataset, spikes, n_train, update_interval, n_classes,
 
             # Assign labels to excitatory layer neurons.
             assignments, proportions, rates = assign_labels(spike_record, labels, n_classes, rates)
+            if plot:
+                display(Javascript(f"addData({i},{np.mean(accuracy['all']):.2f})"))
 
         # Add the current label to the list of labels for this update_interval
         labels[i % update_interval] = label[0]
@@ -147,11 +151,9 @@ def train_network(network, dataset, spikes, n_train, update_interval, n_classes,
         spike_record[i % update_interval] = spikes["Ae"].get("s").view(time, n_neurons)
 
         network.reset_state_variables()  # Reset state variables.
-        pbar.set_description_str(f"Accuracy: {np.mean(accuracy['all']):.2f}. Train progress: ")
-        pbar.update()
-
-        if plot:
-            display(Javascript('addData('+str(accuracy["all"][-1])+','+str(len(accuracy["all"]))+')'))
+        if not plot:
+            pbar.set_description_str(f"Accuracy: {np.mean(accuracy['all']):.2f}. Train progress: ")
+            pbar.update()
 
     print(f"Progress: {n_train} / {n_train} \n")
     print("Training complete.\n")

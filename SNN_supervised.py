@@ -15,6 +15,60 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.cuda.manual_seed_all(0)
 torch.set_num_threads(os.cpu_count() - 1)
 
+import IPython
+import numpy as np
+from IPython.display import display, HTML, Javascript
+import time
+import random
+
+# google colab plotting
+def configure_browser_state():
+  display(IPython.core.display.HTML('''
+    <canvas id="myChart"></canvas>
+  '''))
+  display(IPython.core.display.HTML('''
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+        <script>
+          var ctx = document.getElementById('myChart').getContext('2d');
+          var chart = new Chart(ctx, {
+              // The type of chart we want to create
+              type: 'line',
+
+              // The data for our dataset
+              data: {
+                  labels: [0,1,2,3,4,5],
+                  datasets: [{
+                      label: 'Score',
+                      borderColor: 'rgb(255, 99, 132)',
+                      data: [0,1,2,3,4,5]
+                  }]
+              },
+
+              // Configuration options go here
+              options: {
+                animation: {
+                  duration: 0, // general animation time
+                }
+              }
+          });
+
+          function addData(label, value){
+            chart.data.labels.push(label)
+            chart.data.datasets[0].data.push(value)
+
+            // optional windowing
+            if(chart.data.labels.length > 10) {
+              chart.data.labels.shift()
+              chart.data.datasets[0].data.shift()
+            }
+
+            chart.update();
+          }
+        </script>
+        '''))
+
+
+
 def load_config(filename):
     with open(filename) as f:
         config = json.load(f)
@@ -44,7 +98,7 @@ def create_monitorings(network: DiehlAndCook2015, time: int):
 
     return network, spikes
 
-def train_network(network, dataset, spikes, n_train, update_interval, n_classes, time, n_neurons):
+def train_network(network, dataset, spikes, n_train, update_interval, n_classes, time, n_neurons, plot=False):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
     spike_record = torch.zeros(update_interval, time, n_neurons, device=device)
     accuracy = {"all": [], "proportion": []}
@@ -95,6 +149,9 @@ def train_network(network, dataset, spikes, n_train, update_interval, n_classes,
         network.reset_state_variables()  # Reset state variables.
         pbar.set_description_str(f"Accuracy: {np.mean(accuracy['all']):.2f}. Train progress: ")
         pbar.update()
+
+        if plot:
+            display(Javascript('addData('+str(accuracy["all"][-1])+','+str(len(accuracy["all"]))+')'))
 
     print(f"Progress: {n_train} / {n_train} \n")
     print("Training complete.\n")

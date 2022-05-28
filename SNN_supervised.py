@@ -155,6 +155,7 @@ def train_network(network, dataset, spikes, n_train, update_interval, n_classes,
 
     print(f"Progress: {n_train} / {n_train} \n")
     print("Training complete.\n")
+    return network
 
 # do przerobienia
 def test_network(network, config, spikes):

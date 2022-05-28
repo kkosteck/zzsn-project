@@ -1,8 +1,7 @@
 {
     "n_neurons": 100,
-    "n_train": 60000,
-    "n_test": 10000,
-    "n_clamp": 1,
+    "n_train": 10000,
+    "n_test": 2000,
     "exc": 22.5,
     "inh": 120,
     "theta_plus": 0.05,
@@ -10,8 +9,8 @@
     "dt": 1.0,
     "intensity": 32,
     "progress_interval": 10,
-    "update_interval": 250,
-    "train": true,
+    "update_interval": 10,
     "dataset": "mnist",
-    "n_classes": 10
+    "n_classes": 10,
+    "lr": [1e-10, 1e-3]
 }

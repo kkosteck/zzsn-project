@@ -20,14 +20,14 @@ def load_config(filename):
         config = json.load(f)
     return config
 
-def create_network(n_neurons, exc, inh, dt, theta_plus) -> DiehlAndCook2015:
+def create_network(n_neurons, exc, inh, dt, theta_plus, lr) -> DiehlAndCook2015:
     network = DiehlAndCook2015(
         n_inpt=784,
         n_neurons=n_neurons,
         exc=exc,
         inh=inh,
         dt=dt,
-        nu=[1e-10, 1e-3],  # 0.711
+        nu=lr,  # 0.711
         norm=78.4,
         theta_plus=theta_plus,
         inpt_shape=(1, 28, 28),
@@ -44,7 +44,7 @@ def create_monitorings(network: DiehlAndCook2015, time: int):
 
     return network, spikes
 
-def train_network(network, dataset, spikes, n_train, update_interval, n_classes, time, n_neurons, n_clamp):
+def train_network(network, dataset, spikes, n_train, update_interval, n_classes, time, n_neurons):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
     spike_record = torch.zeros(update_interval, time, n_neurons, device=device)
     accuracy = {"all": [], "proportion": []}
@@ -74,8 +74,8 @@ def train_network(network, dataset, spikes, n_train, update_interval, n_classes,
             accuracy["all"].append(100 * torch.sum(labels.long() == all_activity_pred).item() / update_interval)
             accuracy["proportion"].append(100 * torch.sum(labels.long() == proportion_pred).item() / update_interval)
 
-            print(f"\nAll activity accuracy: {accuracy['all'][-1]:.2f} (last), {np.mean(accuracy['all']):.2f} (average), {np.max(accuracy['all']):.2f} (best)")
-            print(f"Proportion weighting accuracy: {accuracy['proportion'][-1]:.2f} (last), {np.mean(accuracy['proportion']):.2f} (average), {np.max(accuracy['proportion']):.2f} (best)\n")
+            #print(f"\nAll activity accuracy: {accuracy['all'][-1]:.2f} (last), {np.mean(accuracy['all']):.2f} (average), {np.max(accuracy['all']):.2f} (best)")
+            #print(f"Proportion weighting accuracy: {accuracy['proportion'][-1]:.2f} (last), {np.mean(accuracy['proportion']):.2f} (average), {np.max(accuracy['proportion']):.2f} (best)\n")
 
             # Assign labels to excitatory layer neurons.
             assignments, proportions, rates = assign_labels(spike_record, labels, n_classes, rates)
@@ -84,7 +84,7 @@ def train_network(network, dataset, spikes, n_train, update_interval, n_classes,
         labels[i % update_interval] = label[0]
 
         # Run the network on the input.
-        choice = np.random.choice(int(n_neurons / n_classes), size=n_clamp, replace=False)
+        choice = np.random.choice(int(n_neurons / n_classes), size=1, replace=False)
         clamp = {"Ae": per_class * label.long() + torch.Tensor(choice).long()}
         inputs = {"X": image.cuda().view(time, 1, 1, 28, 28)}
         network.run(inputs=inputs, time=time, clamp=clamp)
@@ -167,29 +167,9 @@ def test_network(network, config, spikes):
     print(f"Proportion weighting accuracy: {(accuracy['proportion'] / config['n_test']):.2f} \n")
 
     print("Testing complete.\n")
+    return network
 
 def save_network(network, filename):
     if not os.path.exists("./models"):
         os.mkdir("./models")
     torch.save(network.state_dict(), os.path.join("./models", filename))
-
-def main():
-    config = load_config("config.json")
-    network = create_network(config["n_neurons"], config["exc"], config["inh"], config["dt"], config["theta_plus"])
-    network, spikes = create_monitorings(network, config["time"])
-
-    dataset = MNIST(
-        PoissonEncoder(time=config["time"], dt=config["dt"]),
-        None,
-        root=os.path.join("..", "..", "data", "MNIST"),
-        download=True,
-        transform=transforms.Compose(
-            [transforms.ToTensor(), transforms.Lambda(lambda x: x * config["intensity"])]
-        ),
-    )
-    train_network(network, dataset, spikes, config["n_train"], config["update_interval"], config["n_classes"], config["time"], config["n_neurons"], config["n_clamp"])
-
-
-
-if __name__ == "__main__":
-    main()

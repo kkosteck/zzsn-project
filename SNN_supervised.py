@@ -76,9 +76,9 @@ def train_network(network, train_set, val_set, spikes, config):
 
             # Assign labels to excitatory layer neurons.
             assignments, proportions, rates = assign_labels(spike_record, labels, config["n_classes"], rates)
-        # if i% config["eval_interval"] == 0 and i > 0:
-        #     acc = validate_network(network, val_set, spikes, config)
-        #     print(f"\nValidation accuracy: {acc:.2f}")
+        if i% config["eval_interval"] == 0 and i > 0:
+            acc = validate_network(network, val_set, spikes, config)
+            print(f"\nValidation accuracy: {acc:.2f}")
 
         # Add the current label to the list of labels for this update_interval
         labels[i % config["update_interval"]] = label[0]

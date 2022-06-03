@@ -141,15 +141,12 @@ def validate_network(network, val_set, spikes, config):
 
 def test_network(network, config, spikes, test_dataset):
     print("Testing....\n")
-
-    # Sequence of accuracy estimates.
     accuracy = []
 
     # Record spikes during the simulation.
     print(config["time"])
     spike_record = torch.zeros(1, int(config["time"] / config["dt"]), config["n_neurons"], device=device)
 
-    # Train the network.
     print("\nBegin testing\n")
     network.train(mode=False)
 
@@ -168,13 +165,8 @@ def test_network(network, config, spikes, test_dataset):
         # Run the network on the input.
         network.run(inputs=inputs, time=config["time"], input_time_dim=1)
 
-        # Add to spikes recording.
         spike_record[0] = spikes["Ae"].get("s").squeeze()
-
-        # Convert the array of labels into a tensor
         label_tensor = torch.tensor(batch["label"], device=device)
-
-        # Get network predictions.
         proportion_pred = proportion_weighting(
             spikes=spike_record,
             assignments=assignments,
@@ -182,7 +174,6 @@ def test_network(network, config, spikes, test_dataset):
             n_labels=config["n_classes"],
         )
 
-        # Compute network accuracy according to available classification strategies.
         accuracy.append(float(torch.sum(label_tensor.long() == proportion_pred).item()))
         with open("acc_test.json", "w") as f:
             json.dump(accuracy, f, indent=4)

@@ -163,3 +163,5 @@ models/
 results/
 plots/
 plots.py
+__pycache__/
+*.pyc
